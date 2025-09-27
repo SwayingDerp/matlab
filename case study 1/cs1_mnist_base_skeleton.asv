@@ -79,8 +79,16 @@ cost_iteration = zeros(max_iter, 1);
 for iter=1:max_iter
 
       % FILL THIS IN!
-      total_cost=0;
-    
+      total_cost = 0;
+      for i=1:size(train,1);
+          current_image = train(i, 1:end-1);
+          centroids_pixels_only = centroids(:, 1:size(current_image, 2));
+          [cluster_idx, min_dist] = assign_vector_to_centroid(current_image, centroids_pixels_only);
+          train(i, end) = cluster_idx;
+          total_cost = total_cost + min_dist^2;
+      end
+      cost_iteration(iter) = total_cost;
+      centroids = update_Centroids(train, k);
 end
 
 %% This section of code plots the k-means cost as a function of the number
@@ -88,7 +96,11 @@ end
 
 figure;
 % FILL THIS IN!
-
+plot(1:max_iter, cost_iteration, 'b-o', 'LineWidth', 2);
+xlabel('Iteration');
+ylabel('K-means Cost');
+title('K-means Cost vs. Iteration');
+grid on;
 
 %% This next section of code will make a plot of all of the centroids
 % Again, use help <functionname> to learn about the different functions
@@ -108,7 +120,15 @@ for ind=1:k
     title(strcat('Centroid ',num2str(ind)))
 
 end
-
+% Determine centroid labels and save classifier data
+centroid_labels = determine_centroid_labels(train, centroids, trainsetlabels, k);
+save('classifierdata.mat', 'centroid_labels', 'centroids');
+%function to determined centroid labels
+function centroid_labels = determine_centroid_labels(train, centroids, trainsetlabels, k)
+    centroid_labels = zeros(k, 1);
+    for cluster_num = 1:k
+        cluster_indices = find(train(:, end) == cluster_num);
+        
 %% Function to initialize the centroids
 % This function randomly chooses k vectors from our training set and uses them to be our initial centroids
 % There are other ways you might initialize centroids.
@@ -136,10 +156,14 @@ function [index, vec_distance] = assign_vector_to_centroid(data,centroids)
 % Euclidean distance to each centroid
 num_centroids=size(centroids,1);
 distances = zeros(num_centroids, 1);
-for j=1:num_centroids
-    differeces= data-centroids(j,:);
-    squared_differences = differences .^ 2;
-    distances(j) = sqrt(sum(squared_differences));
+    for j=1:num_centroids
+        current_centroid = centroids(j, 1:length(data));
+        differences = data - current_centroid;
+        squared_differences = differences .^ 2;
+        sum_squared = sum(squared_differences);
+        distances(j) = sqrt(sum_squared);
+    end
+    [vec_distance, index] = min(distances);
 end
 
 
@@ -151,20 +175,17 @@ end
 function new_centroids=update_Centroids(data,K)
 
 % FILL THIS IN
-new_centroids = zeros(K, size(data, 2) - 1);
-for cluster = 1:K
-        % Find all points assigned to this cluster
-        cluster_mask = (data(:, end) == cluster);
-        cluster_points = data(cluster_mask, 1:end-1); % Extract only pixel data
-        
-        if sum(cluster_mask) > 0
-            % Compute mean of all points in the cluster
-            new_centroids(cluster, :) = mean(cluster_points, 1);
-        else
-            % If cluster is empty, reinitialize with random data point
-            % (Alternative: keep previous centroid)
-            random_idx = randi(size(data, 1));
-            new_centroids(cluster, :) = data(random_idx, 1:end-1);
-        end
+num_features = size(data, 2) - 1;
+new_centroids = zeros(K, num_features);
+for cluster_num = 1:K
+    cluster_assignments = data(:, end);
+    is_in_cluster = (cluster_assignments == cluster_num);
+    cluster_pixels = data(is_in_cluster, 1:num_features);
+    if size(cluster_pixels, 1) > 0
+        new_centroids(cluster_num, :) = mean(cluster_pixels, 1);
+    else
+        random_image_index = randi(size(data, 1));
+        new_centroids(cluster_num, :) = data(random_image_index, 1:num_features);
     end
+end
 end

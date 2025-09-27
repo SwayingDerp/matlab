@@ -120,7 +120,26 @@ for ind=1:k
     title(strcat('Centroid ',num2str(ind)))
 
 end
-
+% Determine centroid labels and save classifier data
+centroid_labels = determine_centroid_labels(train, centroids, trainsetlabels, k);
+save('classifierdata.mat', 'centroid_labels', 'centroids');
+%function to determined centroid labels
+function centroid_labels = determine_centroid_labels(train, centroids, trainsetlabels, k)
+    centroid_labels = zeros(k, 1);
+    for cluster_num = 1:k
+        %Finding all training sample assigned to this centroid
+        cluster_indices = find(train(:, end) == cluster_num);
+        if ~isempty(cluster_indices)
+            %get true labels of these samples
+            cluster_true_labels = trainsetlabels(cluster_indices);
+            %Finding the most common labels
+            centroid_labels(cluster_num) = mode(cluster_true_labels);
+        else
+            %if got nothing, return default labels
+            centroid_labels(cluster_num) = 0;
+        end
+    end
+end
 %% Function to initialize the centroids
 % This function randomly chooses k vectors from our training set and uses them to be our initial centroids
 % There are other ways you might initialize centroids.
