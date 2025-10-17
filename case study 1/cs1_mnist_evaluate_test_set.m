@@ -1,5 +1,6 @@
 %% This code evaluates the test set.
-
+clear all;
+close all;
 % ** Important.  This script requires that:
 % 1)'centroid_labels' be established in the workspace
 % AND
@@ -10,7 +11,11 @@
 % IMPORTANT!!:
 % You should save 1) and 2) in a file named 'classifierdata.mat' as part of
 % your submission.
-
+load('classifierdata.mat');
+test = csvread('mnist_test_200_woutliers.csv');
+correctlabels = test(:,785);
+test = test(:,1:784);
+test(:,785) = zeros(200,1);
 predictions = zeros(200,1);
 outliers = zeros(200,1);
 
